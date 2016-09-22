@@ -162,6 +162,16 @@
 		clocks = <&clkc CLKID_SPI>;
 		status = "disabled";
 	};
+
+	gpio_interrupt: interrupt-controller@9880 {
+		compatible = "amlogic,meson-gxbb-gpio-intc",
+			     "amlogic,meson-gpio-intc";
+		reg = <0x0 0x9880 0x0 0x10>;
+		interrupt-controller;
+		#interrupt-cells = <2>;
+		meson,upstream-interrupts = <64 65 66 67 68 69 70 71>;
+		meson,num-input-mux = <133>;
+	};
 };
 
 &ethmac {
@@ -185,6 +195,7 @@
 			reg-names = "mux", "pull", "gpio";
 			gpio-controller;
 			#gpio-cells = <2>;
+			interrupt-parent = <&gpio_interrupt>;
 		};
 
 		uart_ao_a_pins: uart_ao_a {
@@ -278,6 +289,7 @@
 			reg-names = "mux", "pull", "pull-enable", "gpio";
 			gpio-controller;
 			#gpio-cells = <2>;
+			interrupt-parent = <&gpio_interrupt>;
 		};
 
 		emmc_pins: emmc {
