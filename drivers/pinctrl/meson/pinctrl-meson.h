@@ -123,6 +123,7 @@ struct meson_pinctrl {
 	struct regmap *reg_gpio;
 	struct gpio_chip chip;
 	struct device_node *of_node;
+	struct irq_domain *parent_domain;
 };
 
 #define PIN(x, b)	(b + x)

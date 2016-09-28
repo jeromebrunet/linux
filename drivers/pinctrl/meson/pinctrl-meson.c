@@ -50,6 +50,7 @@
 #include <linux/io.h>
 #include <linux/of.h>
 #include <linux/of_address.h>
+#include <linux/of_irq.h>
 #include <linux/pinctrl/pinconf-generic.h>
 #include <linux/pinctrl/pinconf.h>
 #include <linux/pinctrl/pinctrl.h>
@@ -497,6 +498,137 @@ static int meson_gpio_get(struct gpio_chip *chip, unsigned gpio)
 	return !!(val & BIT(bit));
 }
 
+static int meson_gpio_to_hwirq(struct meson_pinctrl *pc, unsigned int offset)
+{
+	struct meson_bank *bank;
+	unsigned int hwirq;
+	int ret;
+
+	ret = meson_get_bank(pc, offset, &bank);
+	if (ret)
+		return ret;
+
+	if (bank->irq_first < 0)
+		/* this bank cannot generate irqs */
+		return -EINVAL;
+
+	hwirq = offset - bank->first + bank->irq_first;
+
+	if (hwirq > bank->irq_last)
+		/* this pin cannot generate irqs */
+		return -EINVAL;
+
+	return hwirq;
+}
+
+static void meson_pinctrl_irq_noop(struct irq_data *data) {}
+
+static void meson_pinctrl_irq_handler(struct irq_desc *desc)
+{
+	struct irq_chip *chip = irq_desc_get_chip(desc);
+	struct irq_data *data = irq_desc_get_handler_data(desc);
+
+	chained_irq_enter(chip, desc);
+
+	if (data)
+		generic_handle_irq(data->irq);
+
+	chained_irq_exit(chip, desc);
+}
+
+static int meson_pinctrl_irq_reqres(struct irq_data *data)
+{
+	struct gpio_chip *chip = irq_data_get_irq_chip_data(data);
+	struct meson_pinctrl *pc = gpiochip_get_data(chip);
+	struct irq_fwspec fwspec;
+	int ret, parent_hwirq;
+	unsigned int virq;
+
+	ret = gpiochip_lock_as_irq(chip, data->hwirq);
+	if (ret) {
+		dev_err(pc->dev, "unable to lock pin %lu as IRQ\n",
+			data->hwirq);
+		return ret;
+	}
+
+	parent_hwirq = meson_gpio_to_hwirq(pc, data->hwirq);
+	/*
+	 * Because of the irq_valid_mask, all pin should be able to map to an
+	 * irq an this stage. just make sure the value is sane ...
+	 * Same thing applies to relres and set_type
+	 */
+	if (parent_hwirq < 0) {
+		ret = -EINVAL;
+		goto unlock_out;
+	}
+
+	fwspec.fwnode = pc->parent_domain->fwnode;
+	fwspec.param_count = 2;
+	fwspec.param[0] = parent_hwirq;
+	fwspec.param[1] = IRQ_TYPE_NONE;
+
+	virq = irq_create_fwspec_mapping(&fwspec);
+	if (!virq) {
+		ret = -EINVAL; /* This error code sucks here */
+		goto unlock_out;
+	}
+
+	irq_set_chained_handler_and_data(virq, meson_pinctrl_irq_handler, data);
+
+	return 0;
+
+unlock_out:
+	gpiochip_unlock_as_irq(chip, data->hwirq);
+	return ret;
+}
+
+static unsigned int meson_pinctrl_irq_get_virq(struct meson_pinctrl *pc,
+					       unsigned int offset)
+{
+	int parent_hwirq = meson_gpio_to_hwirq(pc, offset);
+
+	if (parent_hwirq < 0)
+		return 0;
+
+	return irq_find_mapping(pc->parent_domain, parent_hwirq);
+}
+
+static void meson_pinctrl_irq_relres(struct irq_data *data)
+{
+	struct gpio_chip *chip = irq_data_get_irq_chip_data(data);
+	struct meson_pinctrl *pc = gpiochip_get_data(chip);
+	unsigned int virq;
+
+	virq = meson_pinctrl_irq_get_virq(pc, data->hwirq);
+	if (!virq)
+		return;
+
+	irq_dispose_mapping(virq);
+	gpiochip_unlock_as_irq(chip, data->hwirq);
+}
+
+static int meson_pinctrl_irq_set_type(struct irq_data *data, unsigned int type)
+{
+	struct gpio_chip *chip = irq_data_get_irq_chip_data(data);
+	struct meson_pinctrl *pc = gpiochip_get_data(chip);
+	unsigned int virq;
+
+	virq = meson_pinctrl_irq_get_virq(pc, data->hwirq);
+	if (!virq)
+		return -EINVAL;
+
+	return irq_set_irq_type(virq, type);
+}
+
+static struct irq_chip meson_pinctrl_irq_chip = {
+	.name = "meson-pinctrl-irq",
+	.irq_request_resources = meson_pinctrl_irq_reqres,
+	.irq_release_resources = meson_pinctrl_irq_relres,
+	.irq_set_type = meson_pinctrl_irq_set_type,
+	.irq_mask = meson_pinctrl_irq_noop,
+	.irq_unmask = meson_pinctrl_irq_noop,
+};
+
 static const struct of_device_id meson_pinctrl_dt_match[] = {
 	{
 		.compatible = "amlogic,meson8-cbus-pinctrl",
@@ -533,6 +665,20 @@ static const struct of_device_id meson_pinctrl_dt_match[] = {
 	{ },
 };
 
+static int meson_gpiolib_add_irqs(struct meson_pinctrl *pc)
+{
+	int i;
+
+	/* Some pins don't have a corresponding irq, make sure to skip them */
+	for(i = 0; i < pc->data->num_pins; i++) {
+		if (meson_gpio_to_hwirq(pc, i) < 0)
+			clear_bit(i, pc->chip.irq_valid_mask);
+	}
+
+	return gpiochip_irqchip_add(&pc->chip, &meson_pinctrl_irq_chip, 0,
+				    handle_simple_irq, IRQ_TYPE_NONE);
+}
+
 static int meson_gpiolib_register(struct meson_pinctrl *pc)
 {
 	int ret;
@@ -551,11 +697,22 @@ static int meson_gpiolib_register(struct meson_pinctrl *pc)
 	pc->chip.of_node = pc->of_node;
 	pc->chip.of_gpio_n_cells = 2;
 
+	if (pc->parent_domain)
+		pc->chip.irq_need_valid_mask = true;
+
 	ret = gpiochip_add_data(&pc->chip, pc);
 	if (ret) {
 		dev_err(pc->dev, "can't add gpio chip %s\n",
 			pc->data->name);
 		return ret;
+	}
+
+	if (pc->parent_domain) {
+		ret = meson_gpiolib_add_irqs(pc);
+		if (ret) {
+			dev_err(pc->dev, "failed to add irqs");
+			return ret;
+		}
 	}
 
 	return 0;
@@ -590,6 +747,26 @@ static struct regmap *meson_map_resource(struct meson_pinctrl *pc,
 		return ERR_PTR(-ENOMEM);
 
 	return devm_regmap_init_mmio(pc->dev, base, &meson_regmap_config);
+}
+
+static int meson_pinctrl_get_irq_parent_domain(struct meson_pinctrl *pc,
+						struct device_node *node)
+{
+	struct device_node *np = of_irq_find_parent(node);
+
+	if (!np || !of_device_is_compatible(np, pc->data->irq_compat)) {
+		dev_info(pc->dev, "gpio interrupt disabled\n");
+		pc->parent_domain = NULL;
+		return 0;
+	}
+
+	pc->parent_domain = irq_find_host(np);
+	if(!pc->parent_domain) {
+		pr_err("unable to obtain parent domain\n");
+		return -ENXIO;
+	}
+
+	return 0;
 }
 
 static int meson_pinctrl_parse_dt(struct meson_pinctrl *pc,
@@ -636,6 +813,8 @@ static int meson_pinctrl_parse_dt(struct meson_pinctrl *pc,
 		dev_err(pc->dev, "gpio registers not found\n");
 		return PTR_ERR(pc->reg_gpio);
 	}
+
+	meson_pinctrl_get_irq_parent_domain(pc, gpio_np);
 
 	return 0;
 }
