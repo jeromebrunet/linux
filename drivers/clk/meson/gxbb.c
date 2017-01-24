@@ -613,6 +613,51 @@ static struct clk_gate gxbb_clk81 = {
 	},
 };
 
+static struct clk_mux gxbb_cts_amclk_sel = {
+	.reg = (void *) HHI_AUD_CLK_CNTL,
+	.mask = 0x3,
+	.shift = 9,
+	/* Default parent unknown (register reset value: 0) */
+	.table = (u32[]){ 1, 2, 3 },
+	.lock = &clk_lock,
+		.hw.init = &(struct clk_init_data){
+		.name = "cts_amclk_sel",
+		.ops = &clk_mux_ops,
+		.parent_names = (const char *[]){ "mpll0", "mpll1", "mpll2" },
+		.num_parents = 2,
+		.flags = CLK_SET_RATE_PARENT,
+	},
+};
+
+static struct meson_clk_audio_divider gxbb_cts_amclk_div = {
+	.div = {
+		.reg_off = HHI_AUD_CLK_CNTL,
+		.shift   = 0,
+		.width   = 8,
+	},
+	.lock = &clk_lock,
+	.hw.init = &(struct clk_init_data){
+		.name = "cts_amclk_div",
+		.ops = &meson_clk_audio_divider_ops,
+		.parent_names = (const char *[]){ "cts_amclk_sel" },
+		.num_parents = 1,
+		.flags = CLK_SET_RATE_PARENT | CLK_DIVIDER_ROUND_CLOSEST,
+	},
+};
+
+static struct clk_gate gxbb_cts_amclk = {
+	.reg = (void *) HHI_AUD_CLK_CNTL,
+	.bit_idx = 8,
+	.lock = &clk_lock,
+	.hw.init = &(struct clk_init_data){
+		.name = "cts_amclk",
+		.ops = &clk_gate_ops,
+		.parent_names = (const char *[]){ "cts_amclk_div" },
+		.num_parents = 1,
+		.flags = CLK_SET_RATE_PARENT,
+	},
+};
+
 /* Everything Else (EE) domain gates */
 static MESON_GATE(gxbb_ddr, HHI_GCLK_MPEG0, 0);
 static MESON_GATE(gxbb_dos, HHI_GCLK_MPEG0, 1);
@@ -804,6 +849,9 @@ static struct clk_hw_onecell_data gxbb_hw_onecell_data = {
 		[CLKID_SD_EMMC_B]	    = &gxbb_emmc_b.hw,
 		[CLKID_SD_EMMC_C]	    = &gxbb_emmc_c.hw,
 		[CLKID_MPLL0_PLL]	    = &gxbb_mpll0_pll.hw,
+		[CLKID_CTS_AMCLK]	    = &gxbb_cts_amclk.hw,
+		[CLKID_CTS_AMCLK_SEL]	    = &gxbb_cts_amclk_sel.hw,
+		[CLKID_CTS_AMCLK_DIV]	    = &gxbb_cts_amclk_div.hw,
 	},
 	.num = NR_CLKS,
 };
@@ -907,16 +955,16 @@ static struct clk_gate *gxbb_clk_gates[] = {
 	&gxbb_emmc_b,
 	&gxbb_emmc_c,
 	&gxbb_mpll0,
+	&gxbb_cts_amclk,
 };
 
 static struct clk_mux *gxbb_clk_muxes[] = {
 	&gxbb_mpeg_clk_sel,
-	&gxbb_sar_adc_clk_sel,
+	&gxbb_cts_amclk_sel,
 };
 
 static struct clk_divider *gxbb_clk_dividers[] = {
 	&gxbb_mpeg_clk_div,
-	&gxbb_sar_adc_clk_div,
 };
 
 static int gxbb_clkc_probe(struct platform_device *pdev)
@@ -959,6 +1007,9 @@ static int gxbb_clkc_probe(struct platform_device *pdev)
 	for (i = 0; i < ARRAY_SIZE(gxbb_clk_dividers); i++)
 		gxbb_clk_dividers[i]->reg = clk_base +
 			(u64)gxbb_clk_dividers[i]->reg;
+
+	/* Populate base address for the audio divider */
+	gxbb_cts_amclk_div.base = clk_base;
 
 	/*
 	 * register all clks
