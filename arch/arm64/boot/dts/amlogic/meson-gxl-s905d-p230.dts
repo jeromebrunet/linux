@@ -113,3 +113,13 @@
 		compatible = "brcm,bcm4329-fmac";
 	};
 };
+
+&audio {
+	status = "okay";
+};
+
+&aiu_spdif {
+	pinctrl-0 = <&spdif_out_h_pins>;
+	pinctrl-names = "default";
+	status = "okay";
+};
