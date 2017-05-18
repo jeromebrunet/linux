@@ -605,6 +605,9 @@ static void clk_core_unprepare(struct clk_core *core)
 	if (WARN_ON(core->prepare_count == 1 && core->flags & CLK_IS_CRITICAL))
 		return;
 
+	if (core->flags & CLK_SET_RATE_GATE)
+		clk_core_rate_unprotect(core);
+
 	if (--core->prepare_count > 0)
 		return;
 
@@ -678,6 +681,16 @@ static int clk_core_prepare(struct clk_core *core)
 	}
 
 	core->prepare_count++;
+
+	/*
+	 * CLK_SET_RATE_GATE is a special case of clock protection
+	 * Instead of a consumer claiming exclusive rate control, it is
+	 * actually the provider which prevents any consumer from making any
+	 * operation which could result in a rate change or rate glitch while
+	 * the clock is prepared.
+	 */
+	if (core->flags & CLK_SET_RATE_GATE)
+		clk_core_rate_protect(core);
 
 	return 0;
 unprepare:
@@ -1778,9 +1791,6 @@ static int clk_core_set_rate_nolock(struct clk_core *core,
 
 	/* fail on a direct rate set of a protected provider */
 	if (clk_core_rate_is_protected(core))
-		return -EBUSY;
-
-	if ((core->flags & CLK_SET_RATE_GATE) && core->prepare_count)
 		return -EBUSY;
 
 	/* calculate new rates and get the topmost changed clock */
