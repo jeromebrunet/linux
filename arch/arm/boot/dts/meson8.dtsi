@@ -176,6 +176,10 @@
 	clock-names = "stmmaceth";
 };
 
+&gpio_interrupt {
+	meson,num-input-mux = <119>;
+};
+
 &i2c_AO {
 	clocks = <&clk81>;
 };

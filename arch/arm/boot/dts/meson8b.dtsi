@@ -171,6 +171,10 @@
 	};
 };
 
+&gpio_interrupt {
+	meson,num-input-mux = <119>;
+};
+
 &L2 {
 	arm,data-latency = <3 3 3>;
 	arm,tag-latency = <2 2 2>;
