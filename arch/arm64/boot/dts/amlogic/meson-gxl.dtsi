@@ -207,6 +207,10 @@
 	};
 };
 
+&gpio_interrupt {
+	meson,num-input-mux = <110>;
+};
+
 &hdmi_tx {
 	compatible = "amlogic,meson-gxl-dw-hdmi", "amlogic,meson-gx-dw-hdmi";
 	resets = <&reset RESET_HDMITX_CAPB3>,
