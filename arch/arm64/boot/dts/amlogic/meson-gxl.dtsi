@@ -81,6 +81,8 @@
 			gpio-controller;
 			#gpio-cells = <2>;
 			gpio-ranges = <&pinctrl_aobus 0 0 14>;
+			interrupt-parent = <&gpio_interrupt>;
+			interrupt-controller;
 		};
 
 		uart_ao_a_pins: uart_ao_a {
@@ -263,6 +265,8 @@
 			gpio-controller;
 			#gpio-cells = <2>;
 			gpio-ranges = <&pinctrl_periphs 0 10 101>;
+			interrupt-parent = <&gpio_interrupt>;
+			interrupt-controller;
 		};
 
 		emmc_pins: emmc {
