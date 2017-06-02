@@ -1313,7 +1313,7 @@ __setup_irq(unsigned int irq, struct irq_desc *desc, struct irqaction *new)
 						new->flags & IRQF_TRIGGER_MASK);
 
 			if (ret)
-				goto out_mask;
+				goto out_ressources;
 		}
 
 		desc->istate &= ~(IRQS_AUTODETECT | IRQS_SPURIOUS_DISABLED | \
@@ -1398,6 +1398,9 @@ mismatch:
 	}
 	ret = -EBUSY;
 
+out_ressources:
+	if(!shared)
+		irq_release_resources(desc);
 out_mask:
 	raw_spin_unlock_irqrestore(&desc->lock, flags);
 	free_cpumask_var(mask);
