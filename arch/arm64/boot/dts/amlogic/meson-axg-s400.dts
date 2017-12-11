@@ -19,4 +19,6 @@
 
 &uart_AO {
 	status = "okay";
+	clocks = <&xtal>, <&clkc CLKID_CLK81>, <&xtal>;
+	clock-names = "xtal", "pclk", "baud";
 };
