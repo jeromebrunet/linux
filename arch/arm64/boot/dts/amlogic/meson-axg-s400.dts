@@ -17,6 +17,17 @@
 	};
 };
 
+&ethmac {
+	status = "okay";
+	clocks = <&clkc CLKID_ETH>,
+		 <&clkc CLKID_FCLK_DIV2>,
+		 <&clkc CLKID_MPLL2>;
+	clock-names = "stmmaceth", "clkin0", "clkin1";
+	phy-mode = "rgmii";
+	pinctrl-0 = <&eth_rgmii_y_pins>;
+	pinctrl-names = "default";
+};
+
 &uart_AO {
 	status = "okay";
 	clocks = <&xtal>, <&clkc CLKID_CLK81>, <&xtal>;
