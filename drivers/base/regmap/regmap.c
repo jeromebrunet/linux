@@ -673,6 +673,7 @@ struct regmap *__regmap_init(struct device *dev,
 		map->lock = config->lock;
 		map->unlock = config->unlock;
 		map->lock_arg = config->lock_arg;
+		map->might_sleep = !config->fast_io;
 	} else if (config->hwlock_id) {
 #ifdef REGMAP_HWSPINLOCK
 		map->hwlock = hwspin_lock_request_specific(config->hwlock_id);
@@ -696,6 +697,7 @@ struct regmap *__regmap_init(struct device *dev,
 			break;
 		}
 
+		map->might_sleep = false;
 		map->lock_arg = map;
 #else
 		ret = -EINVAL;
@@ -709,12 +711,14 @@ struct regmap *__regmap_init(struct device *dev,
 			map->unlock = regmap_unlock_spinlock;
 			lockdep_set_class_and_name(&map->spinlock,
 						   lock_key, lock_name);
+			map->might_sleep = false;
 		} else {
 			mutex_init(&map->mutex);
 			map->lock = regmap_lock_mutex;
 			map->unlock = regmap_unlock_mutex;
 			lockdep_set_class_and_name(&map->mutex,
 						   lock_key, lock_name);
+			map->might_sleep = true;
 		}
 		map->lock_arg = map;
 	}
@@ -2997,6 +3001,12 @@ int regmap_parse_val(struct regmap *map, const void *buf,
 	return 0;
 }
 EXPORT_SYMBOL_GPL(regmap_parse_val);
+
+bool regmap_might_sleep(struct regmap *map)
+{
+	return map->might_sleep;
+}
+EXPORT_SYMBOL_GPL(regmap_might_sleep);
 
 static int __init regmap_initcall(void)
 {

@@ -890,6 +890,8 @@ int regmap_register_patch(struct regmap *map, const struct reg_sequence *regs,
 int regmap_parse_val(struct regmap *map, const void *buf,
 				unsigned int *val);
 
+bool regmap_might_sleep(struct regmap *map);
+
 static inline bool regmap_reg_in_range(unsigned int reg,
 				       const struct regmap_range *range)
 {

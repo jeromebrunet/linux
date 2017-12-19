@@ -59,6 +59,7 @@ struct regmap {
 	};
 	regmap_lock lock;
 	regmap_unlock unlock;
+	bool might_sleep;
 	void *lock_arg; /* This is passed to lock/unlock functions */
 	gfp_t alloc_flags;
 
