@@ -1389,7 +1389,6 @@ static int m88ds3103_probe(struct i2c_client *client,
 	/* create regmap */
 	dev->regmap_config.reg_bits = 8,
 	dev->regmap_config.val_bits = 8,
-	dev->regmap_config.lock_arg = dev,
 	dev->regmap = devm_regmap_init_i2c(client, &dev->regmap_config);
 	if (IS_ERR(dev->regmap)) {
 		ret = PTR_ERR(dev->regmap);
