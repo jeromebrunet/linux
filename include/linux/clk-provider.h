@@ -219,6 +219,14 @@ struct clk_ops {
 	int		(*debug_init)(struct clk_hw *hw, struct dentry *dentry);
 };
 
+struct clk_reg_ops {
+	int	(*read)(void *reg, unsigned int offset, unsigned int *val);
+	int	(*write)(void *reg, unsigned int offset, unsigned int val);
+	int	(*update)(void *reg, unsigned int offset, unsigned int mask,
+			  unsigned int val);
+	int	(*reg_might_sleep)(void *reg);
+};
+
 /**
  * struct clk_init_data - holds init data that's common to all clocks and is
  * shared between the clock provider and the common clock framework.
@@ -235,6 +243,19 @@ struct clk_init_data {
 	const char		* const *parent_names;
 	u8			num_parents;
 	unsigned long		flags;
+};
+
+/**
+ * struct clk_init_reg_data - holds register manipulation init data that's
+ * common to all clocks and is shared between the clock provider and the
+ * common clock framework.
+ *
+ * @reg_ops: operation used to manipulate the clock registers
+ * @reg: whatever data the register operations need to operate correctly
+ */
+struct clk_init_reg_data {
+	const struct clk_reg_ops *ops;
+	void* data;
 };
 
 /**
@@ -256,6 +277,7 @@ struct clk_hw {
 	struct clk_core *core;
 	struct clk *clk;
 	const struct clk_init_data *init;
+	const struct clk_init_reg_data *reg_init;
 };
 
 /*
@@ -298,6 +320,12 @@ struct clk_hw *clk_hw_register_fixed_rate_with_accuracy(struct device *dev,
 void clk_hw_unregister_fixed_rate(struct clk_hw *hw);
 
 void of_fixed_clk_setup(struct device_node *np);
+
+int clk_hw_read(struct clk_hw *hw, unsigned int offset, unsigned int *val);
+int clk_hw_write(struct clk_hw *hw, unsigned int offset, unsigned int val);
+int clk_hw_update(struct clk_hw *hw, unsigned int offset, unsigned int mask,
+		  unsigned int val);
+int clk_hw_might_sleep(struct clk_hw *hw);
 
 /**
  * struct clk_gate - gating clock
