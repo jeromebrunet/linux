@@ -76,6 +76,9 @@ struct clk_core {
 	struct hlist_node	debug_node;
 #endif
 	struct kref		ref;
+
+	const struct clk_reg_ops *reg_ops;
+	void			*reg;
 };
 
 #define CREATE_TRACE_POINTS
@@ -2408,6 +2411,55 @@ bool clk_is_match(const struct clk *p, const struct clk *q)
 }
 EXPORT_SYMBOL_GPL(clk_is_match);
 
+int clk_hw_read(struct clk_hw *hw, unsigned int offset, unsigned int *val)
+{
+	struct clk_core *core = hw->core;
+
+	if (WARN_ON(!core->reg_ops))
+		return -EINVAL;
+
+	return core->reg_ops->read(core->reg, offset, val);
+}
+EXPORT_SYMBOL_GPL(clk_hw_read);
+
+int clk_hw_write(struct clk_hw *hw, unsigned int offset, unsigned int val)
+{
+	struct clk_core *core = hw->core;
+
+	if(WARN_ON(!core->reg_ops))
+		return -EINVAL;
+
+	return core->reg_ops->write(core->reg, offset, val);
+}
+EXPORT_SYMBOL_GPL(clk_hw_write);
+
+int clk_hw_update(struct clk_hw *hw, unsigned int offset, unsigned int mask,
+		  unsigned int val)
+{
+	struct clk_core *core = hw->core;
+
+	if(WARN_ON(!core->reg_ops))
+		return -EINVAL;
+
+	return core->reg_ops->update(core->reg, offset, mask, val);
+}
+EXPORT_SYMBOL_GPL(clk_hw_update);
+
+int clk_hw_might_sleep(struct clk_hw *hw)
+{
+	struct clk_core *core = hw->core;
+
+	if(WARN_ON(!core->reg_ops))
+		return -EINVAL;
+
+	/* If might_sleep() is not provided, we assume the worst case */
+	if(!core->reg_ops->reg_might_sleep)
+		return 1; /* true */
+
+	return core->reg_ops->reg_might_sleep(core->reg);
+}
+EXPORT_SYMBOL_GPL(clk_hw_might_sleep);
+
 /***        debugfs support        ***/
 
 #ifdef CONFIG_DEBUG_FS
@@ -3031,6 +3083,18 @@ struct clk *clk_register(struct device *dev, struct clk_hw *hw)
 		goto fail_ops;
 	}
 	core->ops = hw->init->ops;
+
+	if (hw->reg_init) {
+		if (!hw->reg_init->ops ||
+		    !hw->reg_init->ops->read ||
+		    !hw->reg_init->ops->write ||
+		    !hw->reg_init->ops->update) {
+			ret = -EINVAL;
+			goto fail_ops;
+		}
+		core->reg_ops = hw->reg_init->ops;
+		core->reg = hw->reg_init->data;
+	}
 
 	if (dev && pm_runtime_enabled(dev))
 		core->dev = dev;
