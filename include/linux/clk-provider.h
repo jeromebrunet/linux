@@ -329,6 +329,13 @@ int clk_hw_update_hiword_mask(struct clk_hw *hw, unsigned int offset,
 			      unsigned int mask, unsigned int val);
 int clk_hw_might_sleep(struct clk_hw *hw);
 
+struct clk_iomem_register_data {
+	void __iomem	*base;
+	spinlock_t	*lock;
+};
+
+extern const struct clk_reg_ops clk_iomem_ops;
+
 /**
  * struct clk_gate - gating clock
  *
