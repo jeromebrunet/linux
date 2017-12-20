@@ -333,6 +333,9 @@ struct clk_iomem_register_data {
 };
 
 extern const struct clk_reg_ops clk_iomem_ops;
+#ifdef CONFIG_REGMAP
+extern const struct clk_reg_ops clk_regmap_ops;
+#endif
 
 /**
  * struct clk_gate - gating clock
