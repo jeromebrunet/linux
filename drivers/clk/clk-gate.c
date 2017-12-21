@@ -16,6 +16,9 @@
 #include <linux/err.h>
 #include <linux/string.h>
 
+/* Remove when along with register_fixup() */
+#include <linux/device.h>
+
 /**
  * DOC: basic gatable clock which can gate and ungate it's ouput
  *
@@ -103,10 +106,58 @@ int clk_gate_is_enabled(struct clk_hw *hw)
 }
 EXPORT_SYMBOL_GPL(clk_gate_is_enabled);
 
+/*
+ * FIXME:
+ * The following function is provided to ease the transition
+ * of clk_gate to the new way of accessing the register in CCF
+ * Please remove when the transition is done
+ */
+static int clk_gate_register_fixup(struct clk_hw *hw,
+				   struct device *dev)
+{
+	struct clk_gate *gate = to_clk_gate(hw);
+	struct clk_init_reg_data *fixup;
+	struct clk_iomem_register_data *fixup_data;
+
+	if (!hw->reg_init) {
+		printk("Fixing gate ...\n");
+		/*
+		 * If we get here, it means this gate is a legacy one,
+		 * not providing the register operation we need.
+		 *
+		 * Should probably throw a warn here, encouraging people
+		 * to migrate
+		 */
+		fixup = devm_kzalloc(dev, sizeof(*fixup), GFP_KERNEL);
+		if (!fixup)
+			return -ENOMEM;
+
+		fixup_data = devm_kzalloc(dev, sizeof(*fixup_data), GFP_KERNEL);
+		if (!fixup_data)
+			return -ENOMEM;
+
+		/* All legacy clocks use iomem */
+		fixup->ops = &clk_iomem_ops;
+
+		/*
+		 * We are going to pretend that base address is 0
+		 * because reg contains the final address, not the
+		 * offset to a base address
+		 */
+		fixup_data->base = 0;
+		fixup_data->lock = gate->lock;
+		fixup->data = fixup_data;
+		hw->reg_init = fixup;
+	}
+
+	return 0;
+}
+
 const struct clk_ops clk_gate_ops = {
 	.enable = clk_gate_enable,
 	.disable = clk_gate_disable,
 	.is_enabled = clk_gate_is_enabled,
+	.register_fixup = clk_gate_register_fixup,
 };
 EXPORT_SYMBOL_GPL(clk_gate_ops);
 
