@@ -110,6 +110,69 @@ const struct clk_ops clk_gate_ops = {
 };
 EXPORT_SYMBOL_GPL(clk_gate_ops);
 
+static void clk_gate_ng_endisable(struct clk_hw *hw, int enable)
+{
+	struct clk_gate_ng *gate = to_clk_gate_ng(hw);
+	int set = gate->flags & CLK_GATE_SET_TO_DISABLE ? 1 : 0;
+	unsigned int val;
+
+	if (set ^ enable)
+		val = BIT(gate->bit_idx);
+	else
+		val = 0;
+
+	if (gate->flags & CLK_GATE_HIWORD_MASK) {
+		clk_hw_update_hiword_mask(hw, gate->offset,
+					  BIT(gate->bit_idx), val);
+	}
+
+	clk_hw_update(hw, gate->offset, BIT(gate->bit_idx), val);
+}
+
+static int clk_gate_ng_enable(struct clk_hw *hw)
+{
+	clk_gate_ng_endisable(hw, 1);
+	return 0;
+}
+
+static void clk_gate_ng_disable(struct clk_hw *hw)
+{
+	clk_gate_ng_endisable(hw, 0);
+}
+
+static int clk_gate_ng_is_enabled(struct clk_hw *hw)
+{
+	struct clk_gate_ng *gate = to_clk_gate_ng(hw);
+	unsigned int val;
+
+	clk_hw_read(hw, gate->offset, &val);
+
+	/* if a set bit disables this clk, flip it before masking */
+	if (gate->flags & CLK_GATE_SET_TO_DISABLE)
+		val ^= BIT(gate->bit_idx);
+
+	val &= BIT(gate->bit_idx);
+
+	return val ? 1 : 0;
+}
+
+/*
+ * We need to alter these ops at runtime if the register access is slow
+ * The mix we need to do really depends on the clock type
+ * for the gate, we would need the following change
+ * .prepare = enable()
+ * .unprepare = disable()
+ * .is_prepared =  is_enabled()
+ * .enable = .disable = .is_enabled = NULL
+ * We would need to discard the const though
+ */
+const struct clk_ops clk_gate_ng_ops = {
+	.enable = clk_gate_ng_enable,
+	.disable = clk_gate_ng_disable,
+	.is_enabled = clk_gate_ng_is_enabled,
+};
+EXPORT_SYMBOL_GPL(clk_gate_ng_ops);
+
 /**
  * clk_hw_register_gate - register a gate clock with the clock framework
  * @dev: device that is registering this clock

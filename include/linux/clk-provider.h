@@ -368,11 +368,40 @@ struct clk_gate {
 };
 
 #define to_clk_gate(_hw) container_of(_hw, struct clk_gate, hw)
+extern const struct clk_ops clk_gate_ops;
+
+/**
+ * struct clk_gate_ng - gating clock with generic register access
+ *
+ * @hw:		handle between common and hardware-specific interfaces
+ * @offset:	memory offset of the controlling register
+ * @bit_idx:	single bit controlling gate
+ * @flags:	hardware-specific flags
+ *
+ * Clock which can gate its output.  Implements .enable & .disable
+ *
+ * Flags:
+ * CLK_GATE_SET_TO_DISABLE - by default this clock sets the bit at bit_idx to
+ *	enable the clock.  Setting this flag does the opposite: setting the bit
+ *	disable the clock and clearing it enables the clock
+ * CLK_GATE_HIWORD_MASK - The gate settings are only in lower 16-bit
+ *	of this register, and mask of gate bits are in higher 16-bit of this
+ *	register.  While setting the gate bits, higher 16-bit should also be
+ *	updated to indicate changing gate bits.
+ */
+struct clk_gate_ng {
+	struct clk_hw 	hw;
+	unsigned int	offset;
+	u8		bit_idx;
+	u8		flags;
+};
+
+#define to_clk_gate_ng(_hw) container_of(_hw, struct clk_gate_ng, hw)
+extern const struct clk_ops clk_gate_ng_ops;
 
 #define CLK_GATE_SET_TO_DISABLE		BIT(0)
 #define CLK_GATE_HIWORD_MASK		BIT(1)
 
-extern const struct clk_ops clk_gate_ops;
 struct clk *clk_register_gate(struct device *dev, const char *name,
 		const char *parent_name, unsigned long flags,
 		void __iomem *reg, u8 bit_idx,
