@@ -58,6 +58,7 @@ static u8 clk_mux_get_parent(struct clk_hw *hw)
 		val--;
 
 	if (val >= num_parents)
+		/* FIXME: return type is u8. how is this going play out ? */
 		return -EINVAL;
 
 	return val;
