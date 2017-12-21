@@ -3084,6 +3084,17 @@ struct clk *clk_register(struct device *dev, struct clk_hw *hw)
 	}
 	core->ops = hw->init->ops;
 
+	/* FIXME: Kill me please */
+	if(!hw->reg_init && core->ops->register_fixup) {
+		if (!dev) {
+			WARN_ONCE(true, "Can't fixup clk when we wanted to\n");
+		} else {
+			ret = core->ops->register_fixup(hw, dev);
+			if (ret)
+				goto fail_ops;
+		}
+	}
+
 	if (hw->reg_init) {
 		if (!hw->reg_init->ops ||
 		    !hw->reg_init->ops->read ||

@@ -217,6 +217,12 @@ struct clk_ops {
 	int		(*set_phase)(struct clk_hw *hw, int degrees);
 	void		(*init)(struct clk_hw *hw);
 	int		(*debug_init)(struct clk_hw *hw, struct dentry *dentry);
+
+	/*
+	 * This is just provided as a temporary way to migrate clk to the new
+	 * register manipulation method
+	 */
+	int		(*register_fixup)(struct clk_hw *hw, struct device *dev);
 };
 
 struct clk_reg_ops {
