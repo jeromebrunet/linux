@@ -428,6 +428,73 @@ const struct clk_ops clk_divider_ro_ops = {
 };
 EXPORT_SYMBOL_GPL(clk_divider_ro_ops);
 
+static unsigned long clk_divider_ng_recalc_rate(struct clk_hw *hw,
+						unsigned long parent_rate)
+{
+	struct clk_divider_ng *divider = to_clk_divider_ng(hw);
+	unsigned int val;
+
+	clk_hw_read(hw, divider->offset, &val);
+	val = (val >> divider->shift) & div_mask(divider->width);
+
+	return divider_recalc_rate(hw, parent_rate, val, divider->table,
+				   divider->flags, divider->width);
+}
+
+static long clk_divider_ng_round_rate(struct clk_hw *hw, unsigned long rate,
+				      unsigned long *prate)
+{
+	struct clk_divider_ng *divider = to_clk_divider_ng(hw);
+	unsigned int val;
+	int bestdiv;
+
+	/* if read only, just return current value */
+	if (divider->flags & CLK_DIVIDER_READ_ONLY) {
+		clk_hw_read(hw, divider->offset, &val);
+		val = val >> divider->shift;
+	        val &= div_mask(divider->width);
+		bestdiv = _get_div(divider->table, val, divider->flags,
+				   divider->width);
+		return DIV_ROUND_UP_ULL((u64)*prate, bestdiv);
+	}
+
+	return divider_round_rate(hw, rate, prate, divider->table,
+				  divider->width, divider->flags);
+}
+
+static int clk_divider_ng_set_rate(struct clk_hw *hw, unsigned long rate,
+				   unsigned long parent_rate)
+{
+	struct clk_divider_ng *divider = to_clk_divider_ng(hw);
+	unsigned int mask = div_mask(divider->width) << divider->shift;
+	int value;
+
+	value = divider_get_val(rate, parent_rate, divider->table,
+				divider->width, divider->flags);
+	if (value < 0)
+		return value;
+
+	if (divider->flags & CLK_DIVIDER_HIWORD_MASK)
+		return clk_hw_update_hiword_mask(hw, divider->offset, mask,
+						 value << divider->shift);
+
+	return clk_hw_update(hw, divider->offset, mask,
+			     value << divider->shift);
+}
+
+const struct clk_ops clk_divider_ng_ops = {
+	.recalc_rate = clk_divider_ng_recalc_rate,
+	.round_rate = clk_divider_ng_round_rate,
+	.set_rate = clk_divider_ng_set_rate,
+};
+EXPORT_SYMBOL_GPL(clk_divider_ng_ops);
+
+const struct clk_ops clk_divider_ng_ro_ops = {
+	.recalc_rate = clk_divider_ng_recalc_rate,
+	.round_rate = clk_divider_ng_round_rate,
+};
+EXPORT_SYMBOL_GPL(clk_divider_ng_ro_ops);
+
 static struct clk_hw *_register_divider(struct device *dev, const char *name,
 		const char *parent_name, unsigned long flags,
 		void __iomem *reg, u8 shift, u8 width,

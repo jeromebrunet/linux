@@ -467,6 +467,58 @@ struct clk_divider {
 };
 
 #define to_clk_divider(_hw) container_of(_hw, struct clk_divider, hw)
+extern const struct clk_ops clk_divider_ops;
+extern const struct clk_ops clk_divider_ro_ops;
+
+/**
+ * struct clk_divider_ng - adjustable divider clock with generic register access
+ *
+ * @hw:		handle between common and hardware-specific interfaces
+ * @offset:	memory offset of the controlling register
+ * @shift:	shift to the divider bit field
+ * @width:	width of the divider bit field
+ * @table:	array of value/divider pairs, last entry should have div = 0
+ *
+ * Clock with an adjustable divider affecting its output frequency.  Implements
+ * .recalc_rate, .set_rate and .round_rate
+ *
+ * Flags:
+ * CLK_DIVIDER_ONE_BASED - by default the divisor is the value read from the
+ *	register plus one.  If CLK_DIVIDER_ONE_BASED is set then the divider is
+ *	the raw value read from the register, with the value of zero considered
+ *	invalid, unless CLK_DIVIDER_ALLOW_ZERO is set.
+ * CLK_DIVIDER_POWER_OF_TWO - clock divisor is 2 raised to the value read from
+ *	the hardware register
+ * CLK_DIVIDER_ALLOW_ZERO - Allow zero divisors.  For dividers which have
+ *	CLK_DIVIDER_ONE_BASED set, it is possible to end up with a zero divisor.
+ *	Some hardware implementations gracefully handle this case and allow a
+ *	zero divisor by not modifying their input clock
+ *	(divide by one / bypass).
+ * CLK_DIVIDER_HIWORD_MASK - The divider settings are only in lower 16-bit
+ *	of this register, and mask of divider bits are in higher 16-bit of this
+ *	register.  While setting the divider bits, higher 16-bit should also be
+ *	updated to indicate changing divider bits.
+ * CLK_DIVIDER_ROUND_CLOSEST - Makes the best calculated divider to be rounded
+ *	to the closest integer instead of the up one.
+ * CLK_DIVIDER_READ_ONLY - The divider settings are preconfigured and should
+ *	not be changed by the clock framework.
+ * CLK_DIVIDER_MAX_AT_ZERO - For dividers which are like CLK_DIVIDER_ONE_BASED
+ *	except when the value read from the register is zero, the divisor is
+ *	2^width of the field.
+ */
+struct clk_divider_ng {
+	struct clk_hw	hw;
+	unsigned int	offset;
+	u8		shift;
+	u8		width;
+	u8		flags;
+	const struct clk_div_table	*table;
+};
+
+#define to_clk_divider_ng(_hw) container_of(_hw, struct clk_divider_ng, hw)
+extern const struct clk_ops clk_divider_ng_ops;
+extern const struct clk_ops clk_divider_ng_ro_ops;
+
 
 #define CLK_DIVIDER_ONE_BASED		BIT(0)
 #define CLK_DIVIDER_POWER_OF_TWO	BIT(1)
@@ -475,9 +527,6 @@ struct clk_divider {
 #define CLK_DIVIDER_ROUND_CLOSEST	BIT(4)
 #define CLK_DIVIDER_READ_ONLY		BIT(5)
 #define CLK_DIVIDER_MAX_AT_ZERO		BIT(6)
-
-extern const struct clk_ops clk_divider_ops;
-extern const struct clk_ops clk_divider_ro_ops;
 
 unsigned long divider_recalc_rate(struct clk_hw *hw, unsigned long parent_rate,
 		unsigned int val, const struct clk_div_table *table,
