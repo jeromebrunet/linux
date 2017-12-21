@@ -2445,6 +2445,20 @@ int clk_hw_update(struct clk_hw *hw, unsigned int offset, unsigned int mask,
 }
 EXPORT_SYMBOL_GPL(clk_hw_update);
 
+int clk_hw_update_hiword_mask(struct clk_hw *hw, unsigned int offset,
+			      unsigned int mask, unsigned int val)
+{
+	struct clk_core *core = hw->core;
+
+	if(WARN_ON(!core->reg_ops))
+		return -EINVAL;
+
+	val |= (mask << 16);
+
+	return core->reg_ops->write(core->reg, offset, val);
+}
+EXPORT_SYMBOL_GPL(clk_hw_update_hiword_mask);
+
 int clk_hw_might_sleep(struct clk_hw *hw)
 {
 	struct clk_core *core = hw->core;

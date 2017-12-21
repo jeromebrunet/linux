@@ -325,6 +325,8 @@ int clk_hw_read(struct clk_hw *hw, unsigned int offset, unsigned int *val);
 int clk_hw_write(struct clk_hw *hw, unsigned int offset, unsigned int val);
 int clk_hw_update(struct clk_hw *hw, unsigned int offset, unsigned int mask,
 		  unsigned int val);
+int clk_hw_update_hiword_mask(struct clk_hw *hw, unsigned int offset,
+			      unsigned int mask, unsigned int val);
 int clk_hw_might_sleep(struct clk_hw *hw);
 
 /**
