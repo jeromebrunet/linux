@@ -594,15 +594,49 @@ struct clk_mux {
 };
 
 #define to_clk_mux(_hw) container_of(_hw, struct clk_mux, hw)
+extern const struct clk_ops clk_mux_ops;
+extern const struct clk_ops clk_mux_ro_ops;
+
+/**
+ * struct clk_mux_ng - multiplexer clock with generic register access
+ *
+ * @hw:		handle between common and hardware-specific interfaces
+ * @offset:	memory offset of the controlling register
+ * @shift:	shift to multiplexer bit field
+ * @width:	width of mutliplexer bit field
+ * @flags:	hardware-specific flags
+ *
+ * Clock with multiple selectable parents.  Implements .get_parent, .set_parent
+ * and .recalc_rate
+ *
+ * Flags:
+ * CLK_MUX_INDEX_ONE - register index starts at 1, not 0
+ * CLK_MUX_INDEX_BIT - register index is a single bit (power of two)
+ * CLK_MUX_HIWORD_MASK - The mux settings are only in lower 16-bit of this
+ *	register, and mask of mux bits are in higher 16-bit of this register.
+ *	While setting the mux bits, higher 16-bit should also be updated to
+ *	indicate changing mux bits.
+ * CLK_MUX_ROUND_CLOSEST - Use the parent rate that is closest to the desired
+ *	frequency.
+ */
+struct clk_mux_ng {
+	struct clk_hw	hw;
+	unsigned int	offset;
+	u32		*table;
+	u32		mask;
+	u8		shift;
+	u8		flags;
+};
+
+#define to_clk_mux_ng(_hw) container_of(_hw, struct clk_mux_ng, hw)
+extern const struct clk_ops clk_mux_ng_ops;
+extern const struct clk_ops clk_mux_ng_ro_ops;
 
 #define CLK_MUX_INDEX_ONE		BIT(0)
 #define CLK_MUX_INDEX_BIT		BIT(1)
 #define CLK_MUX_HIWORD_MASK		BIT(2)
 #define CLK_MUX_READ_ONLY		BIT(3) /* mux can't be changed */
 #define CLK_MUX_ROUND_CLOSEST		BIT(4)
-
-extern const struct clk_ops clk_mux_ops;
-extern const struct clk_ops clk_mux_ro_ops;
 
 struct clk *clk_register_mux(struct device *dev, const char *name,
 		const char * const *parent_names, u8 num_parents,

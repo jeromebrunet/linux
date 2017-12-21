@@ -131,6 +131,44 @@ const struct clk_ops clk_mux_ro_ops = {
 };
 EXPORT_SYMBOL_GPL(clk_mux_ro_ops);
 
+static u8 clk_mux_ng_get_parent(struct clk_hw *hw)
+{
+	struct clk_mux_ng *mux = to_clk_mux_ng(hw);
+	unsigned int val;
+
+	clk_hw_read(hw, mux->offset, &val);
+	val = val >> mux->shift;
+	val &= mux->mask;
+
+	return mux_val_to_index(hw, mux->table, mux->flags, val);
+}
+
+static int clk_mux_ng_set_parent(struct clk_hw *hw, u8 index)
+{
+	struct clk_mux_ng *mux = to_clk_mux_ng(hw);
+	u32 val = mux_index_to_val(mux->table, mux->flags, index);
+	unsigned int mask = mux->mask << mux->shift;
+
+	val = val << mux->shift;
+
+	if (mux->flags & CLK_MUX_HIWORD_MASK)
+		return clk_hw_update_hiword_mask(hw, mux->offset, mask, val);
+
+	return clk_hw_update(hw, mux->offset, mask, val);
+}
+
+const struct clk_ops clk_mux_ng_ops = {
+	.get_parent = clk_mux_ng_get_parent,
+	.set_parent = clk_mux_ng_set_parent,
+	.determine_rate = __clk_mux_determine_rate,
+};
+EXPORT_SYMBOL_GPL(clk_mux_ng_ops);
+
+const struct clk_ops clk_mux_ng_ro_ops = {
+	.get_parent = clk_mux_ng_get_parent,
+};
+EXPORT_SYMBOL_GPL(clk_mux_ng_ro_ops);
+
 struct clk_hw *clk_hw_register_mux_table(struct device *dev, const char *name,
 		const char * const *parent_names, u8 num_parents,
 		unsigned long flags,
