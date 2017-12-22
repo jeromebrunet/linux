@@ -56,14 +56,7 @@ struct meson8b_dwmac {
 
 	phy_interface_t		phy_mode;
 
-	struct clk_mux		m250_mux;
 	struct clk		*m250_mux_clk;
-	struct clk		*m250_mux_parent[MUX_CLK_NUM_PARENTS];
-
-	struct clk_divider	m250_div;
-	struct clk		*m250_div_clk;
-
-	struct clk_divider	m25_div;
 	struct clk		*m25_div_clk;
 
 	u32			tx_delay_ns;
@@ -81,36 +74,43 @@ static void meson8b_dwmac_mask_bits(struct meson8b_dwmac *dwmac, u32 reg,
 	writel(data, dwmac->regs + reg);
 }
 
+static const struct clk_div_table clk_25m_div_table[] = {
+	{ .val = 0, .div = 5 },
+	{ .val = 1, .div = 10 },
+	{ /* sentinel */ },
+};
+
 static int meson8b_init_clk(struct meson8b_dwmac *dwmac)
 {
-	struct clk_init_data init;
-	int i, ret;
 	struct device *dev = &dwmac->pdev->dev;
+	struct clk_init_data init;
+	struct clk_mux *mux;
+	struct clk_divider *div_25, *div_250;
+	struct clk *clk;
+	int i, ret;
 	char clk_name[32];
-	const char *clk_div_parents[1];
+	const char *div_parent_names[1];
 	const char *mux_parent_names[MUX_CLK_NUM_PARENTS];
-	static const struct clk_div_table clk_25m_div_table[] = {
-		{ .val = 0, .div = 5 },
-		{ .val = 1, .div = 10 },
-		{ /* sentinel */ },
-	};
 
 	/* get the mux parents from DT */
 	for (i = 0; i < MUX_CLK_NUM_PARENTS; i++) {
 		char name[16];
 
 		snprintf(name, sizeof(name), "clkin%d", i);
-		dwmac->m250_mux_parent[i] = devm_clk_get(dev, name);
-		if (IS_ERR(dwmac->m250_mux_parent[i])) {
-			ret = PTR_ERR(dwmac->m250_mux_parent[i]);
+		clk = devm_clk_get(dev, name);
+		if (IS_ERR(clk)) {
+			ret = PTR_ERR(clk);
 			if (ret != -EPROBE_DEFER)
 				dev_err(dev, "Missing clock %s\n", name);
 			return ret;
 		}
 
-		mux_parent_names[i] =
-			__clk_get_name(dwmac->m250_mux_parent[i]);
+		mux_parent_names[i] = __clk_get_name(clk);
 	}
+
+	mux = devm_kzalloc(dev, sizeof(*mux), GFP_KERNEL);
+	if (!mux)
+		return -ENOMEM;
 
 	/* create the m250_mux */
 	snprintf(clk_name, sizeof(clk_name), "%s#m250_sel", dev_name(dev));
@@ -120,53 +120,59 @@ static int meson8b_init_clk(struct meson8b_dwmac *dwmac)
 	init.parent_names = mux_parent_names;
 	init.num_parents = MUX_CLK_NUM_PARENTS;
 
-	dwmac->m250_mux.reg = dwmac->regs + PRG_ETH0;
-	dwmac->m250_mux.shift = PRG_ETH0_CLK_M250_SEL_SHIFT;
-	dwmac->m250_mux.mask = PRG_ETH0_CLK_M250_SEL_MASK;
-	dwmac->m250_mux.flags = 0;
-	dwmac->m250_mux.table = NULL;
-	dwmac->m250_mux.hw.init = &init;
+	mux->reg = dwmac->regs + PRG_ETH0;
+	mux->shift = PRG_ETH0_CLK_M250_SEL_SHIFT;
+	mux->mask = PRG_ETH0_CLK_M250_SEL_MASK;
+	mux->hw.init = &init;
 
-	dwmac->m250_mux_clk = devm_clk_register(dev, &dwmac->m250_mux.hw);
+	dwmac->m250_mux_clk = devm_clk_register(dev, &mux->hw);
 	if (WARN_ON(IS_ERR(dwmac->m250_mux_clk)))
 		return PTR_ERR(dwmac->m250_mux_clk);
 
-	/* create the m250_div */
+	/* create the m250 divider */
+	div_250 = devm_kzalloc(dev, sizeof(*div_250), GFP_KERNEL);
+	if (!div_250)
+		return -ENOMEM;
+
 	snprintf(clk_name, sizeof(clk_name), "%s#m250_div", dev_name(dev));
-	init.name = devm_kstrdup(dev, clk_name, GFP_KERNEL);
+	init.name = clk_name;
 	init.ops = &clk_divider_ops;
 	init.flags = CLK_SET_RATE_PARENT;
-	clk_div_parents[0] = __clk_get_name(dwmac->m250_mux_clk);
-	init.parent_names = clk_div_parents;
-	init.num_parents = ARRAY_SIZE(clk_div_parents);
+	div_parent_names[0] = __clk_get_name(dwmac->m250_mux_clk);
+	init.parent_names = div_parent_names;
+	init.num_parents = ARRAY_SIZE(div_parent_names);
 
-	dwmac->m250_div.reg = dwmac->regs + PRG_ETH0;
-	dwmac->m250_div.shift = PRG_ETH0_CLK_M250_DIV_SHIFT;
-	dwmac->m250_div.width = PRG_ETH0_CLK_M250_DIV_WIDTH;
-	dwmac->m250_div.hw.init = &init;
-	dwmac->m250_div.flags = CLK_DIVIDER_ONE_BASED | CLK_DIVIDER_ALLOW_ZERO;
+	div_250->reg = dwmac->regs + PRG_ETH0;
+	div_250->shift = PRG_ETH0_CLK_M250_DIV_SHIFT;
+	div_250->width = PRG_ETH0_CLK_M250_DIV_WIDTH;
+	div_250->hw.init = &init;
+	div_250->flags = CLK_DIVIDER_ONE_BASED | CLK_DIVIDER_ALLOW_ZERO;
 
-	dwmac->m250_div_clk = devm_clk_register(dev, &dwmac->m250_div.hw);
-	if (WARN_ON(IS_ERR(dwmac->m250_div_clk)))
-		return PTR_ERR(dwmac->m250_div_clk);
+	clk = devm_clk_register(dev, &div_250->hw);
+	if (WARN_ON(IS_ERR(clk)))
+		return PTR_ERR(clk);
 
-	/* create the m25_div */
+	/* create the m250 divider */
+	div_25 = devm_kzalloc(dev, sizeof(*div_25), GFP_KERNEL);
+	if (!div_25)
+		return -ENOMEM;
+
 	snprintf(clk_name, sizeof(clk_name), "%s#m25_div", dev_name(dev));
-	init.name = devm_kstrdup(dev, clk_name, GFP_KERNEL);
+	init.name = clk_name;
 	init.ops = &clk_divider_ops;
 	init.flags = CLK_IS_BASIC | CLK_SET_RATE_PARENT;
-	clk_div_parents[0] = __clk_get_name(dwmac->m250_div_clk);
-	init.parent_names = clk_div_parents;
-	init.num_parents = ARRAY_SIZE(clk_div_parents);
+	div_parent_names[0] = __clk_get_name(clk);
+	init.parent_names = div_parent_names;
+	init.num_parents = ARRAY_SIZE(div_parent_names);
 
-	dwmac->m25_div.reg = dwmac->regs + PRG_ETH0;
-	dwmac->m25_div.shift = PRG_ETH0_CLK_M25_DIV_SHIFT;
-	dwmac->m25_div.width = PRG_ETH0_CLK_M25_DIV_WIDTH;
-	dwmac->m25_div.table = clk_25m_div_table;
-	dwmac->m25_div.hw.init = &init;
-	dwmac->m25_div.flags = CLK_DIVIDER_ALLOW_ZERO;
+	div_25->reg = dwmac->regs + PRG_ETH0;
+	div_25->shift = PRG_ETH0_CLK_M25_DIV_SHIFT;
+	div_25->width = PRG_ETH0_CLK_M25_DIV_WIDTH;
+	div_25->table = clk_25m_div_table;
+	div_25->hw.init = &init;
+	div_25->flags = CLK_DIVIDER_ALLOW_ZERO;
 
-	dwmac->m25_div_clk = devm_clk_register(dev, &dwmac->m25_div.hw);
+	dwmac->m25_div_clk = devm_clk_register(dev, &div_25->hw);
 	if (WARN_ON(IS_ERR(dwmac->m25_div_clk)))
 		return PTR_ERR(dwmac->m25_div_clk);
 
