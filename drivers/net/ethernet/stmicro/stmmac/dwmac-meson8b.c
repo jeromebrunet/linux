@@ -84,8 +84,10 @@ static int meson8b_init_clk(struct meson8b_dwmac *dwmac)
 {
 	struct device *dev = &dwmac->pdev->dev;
 	struct clk_init_data init;
-	struct clk_mux *mux;
-	struct clk_divider *div_25, *div_250;
+	struct clk_init_reg_data reg_init;
+	struct clk_iomem_register_data *data;
+	struct clk_mux_ng *mux;
+	struct clk_divider_ng *div_25, *div_250;
 	struct clk *clk;
 	int i, ret;
 	char clk_name[32];
@@ -108,6 +110,14 @@ static int meson8b_init_clk(struct meson8b_dwmac *dwmac)
 		mux_parent_names[i] = __clk_get_name(clk);
 	}
 
+	data = devm_kzalloc(dev, sizeof(*data), GFP_KERNEL);
+	if (!data)
+		return -ENOMEM;
+
+	data->base = dwmac->regs;
+	reg_init.data = data;
+	reg_init.ops = &clk_iomem_ops;
+
 	mux = devm_kzalloc(dev, sizeof(*mux), GFP_KERNEL);
 	if (!mux)
 		return -ENOMEM;
@@ -115,15 +125,16 @@ static int meson8b_init_clk(struct meson8b_dwmac *dwmac)
 	/* create the m250_mux */
 	snprintf(clk_name, sizeof(clk_name), "%s#m250_sel", dev_name(dev));
 	init.name = clk_name;
-	init.ops = &clk_mux_ops;
+	init.ops = &clk_mux_ng_ops;
 	init.flags = 0;
 	init.parent_names = mux_parent_names;
 	init.num_parents = MUX_CLK_NUM_PARENTS;
 
-	mux->reg = dwmac->regs + PRG_ETH0;
+	mux->offset = PRG_ETH0;
 	mux->shift = PRG_ETH0_CLK_M250_SEL_SHIFT;
 	mux->mask = PRG_ETH0_CLK_M250_SEL_MASK;
 	mux->hw.init = &init;
+	mux->hw.reg_init = &reg_init;
 
 	dwmac->m250_mux_clk = devm_clk_register(dev, &mux->hw);
 	if (WARN_ON(IS_ERR(dwmac->m250_mux_clk)))
@@ -136,16 +147,17 @@ static int meson8b_init_clk(struct meson8b_dwmac *dwmac)
 
 	snprintf(clk_name, sizeof(clk_name), "%s#m250_div", dev_name(dev));
 	init.name = clk_name;
-	init.ops = &clk_divider_ops;
+	init.ops = &clk_divider_ng_ops;
 	init.flags = CLK_SET_RATE_PARENT;
 	div_parent_names[0] = __clk_get_name(dwmac->m250_mux_clk);
 	init.parent_names = div_parent_names;
 	init.num_parents = ARRAY_SIZE(div_parent_names);
 
-	div_250->reg = dwmac->regs + PRG_ETH0;
+	div_250->offset = PRG_ETH0;
 	div_250->shift = PRG_ETH0_CLK_M250_DIV_SHIFT;
 	div_250->width = PRG_ETH0_CLK_M250_DIV_WIDTH;
 	div_250->hw.init = &init;
+	div_250->hw.reg_init = &reg_init;
 	div_250->flags = CLK_DIVIDER_ONE_BASED | CLK_DIVIDER_ALLOW_ZERO;
 
 	clk = devm_clk_register(dev, &div_250->hw);
@@ -159,17 +171,18 @@ static int meson8b_init_clk(struct meson8b_dwmac *dwmac)
 
 	snprintf(clk_name, sizeof(clk_name), "%s#m25_div", dev_name(dev));
 	init.name = clk_name;
-	init.ops = &clk_divider_ops;
+	init.ops = &clk_divider_ng_ops;
 	init.flags = CLK_IS_BASIC | CLK_SET_RATE_PARENT;
 	div_parent_names[0] = __clk_get_name(clk);
 	init.parent_names = div_parent_names;
 	init.num_parents = ARRAY_SIZE(div_parent_names);
 
-	div_25->reg = dwmac->regs + PRG_ETH0;
+	div_25->offset= PRG_ETH0;
 	div_25->shift = PRG_ETH0_CLK_M25_DIV_SHIFT;
 	div_25->width = PRG_ETH0_CLK_M25_DIV_WIDTH;
 	div_25->table = clk_25m_div_table;
 	div_25->hw.init = &init;
+	div_25->hw.reg_init = &reg_init;
 	div_25->flags = CLK_DIVIDER_ALLOW_ZERO;
 
 	dwmac->m25_div_clk = devm_clk_register(dev, &div_25->hw);
