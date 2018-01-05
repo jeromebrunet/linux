@@ -348,6 +348,7 @@ static long clk_divider_round_rate(struct clk_hw *hw, unsigned long rate,
 				unsigned long *prate)
 {
 	struct clk_divider *divider = to_clk_divider(hw);
+	struct clk_hw *hw_parent = clk_hw_get_parent(hw);
 	int bestdiv;
 
 	/* if read only, just return current value */
@@ -356,6 +357,15 @@ static long clk_divider_round_rate(struct clk_hw *hw, unsigned long rate,
 		bestdiv &= div_mask(divider->width);
 		bestdiv = _get_div(divider->table, bestdiv, divider->flags,
 			divider->width);
+
+		/* Even a read-only clock can propagate a rate change */
+		if (clk_hw_get_flags(hw) & CLK_SET_RATE_PARENT) {
+			if (!hw_parent)
+				return -EINVAL;
+
+			*prate = clk_hw_round_rate(hw_parent, rate * bestdiv);
+		}
+
 		return DIV_ROUND_UP_ULL((u64)*prate, bestdiv);
 	}
 
