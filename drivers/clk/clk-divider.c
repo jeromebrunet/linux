@@ -344,29 +344,42 @@ long divider_round_rate_parent(struct clk_hw *hw, struct clk_hw *parent,
 }
 EXPORT_SYMBOL_GPL(divider_round_rate_parent);
 
+long divider_ro_round_rate_parent(struct clk_hw *hw, struct clk_hw *parent,
+				  unsigned long rate, unsigned long *prate,
+				  const struct clk_div_table *table, u8 width,
+				  unsigned long flags, unsigned int val)
+{
+	int div;
+
+	div = _get_div(table, val, flags, width);
+
+	/* Even a read-only clock can propagate a rate change */
+	if (clk_hw_get_flags(hw) & CLK_SET_RATE_PARENT) {
+		if (!parent)
+			return -EINVAL;
+
+		*prate = clk_hw_round_rate(parent, rate * div);
+	}
+
+	return DIV_ROUND_UP_ULL((u64)*prate, div);
+}
+EXPORT_SYMBOL_GPL(divider_ro_round_rate_parent);
+
+
 static long clk_divider_round_rate(struct clk_hw *hw, unsigned long rate,
 				unsigned long *prate)
 {
 	struct clk_divider *divider = to_clk_divider(hw);
-	struct clk_hw *hw_parent = clk_hw_get_parent(hw);
-	int bestdiv;
+	u32 val;
 
 	/* if read only, just return current value */
 	if (divider->flags & CLK_DIVIDER_READ_ONLY) {
-		bestdiv = clk_readl(divider->reg) >> divider->shift;
-		bestdiv &= div_mask(divider->width);
-		bestdiv = _get_div(divider->table, bestdiv, divider->flags,
-			divider->width);
+		val = clk_readl(divider->reg) >> divider->shift;
+		val &= div_mask(divider->width);
 
-		/* Even a read-only clock can propagate a rate change */
-		if (clk_hw_get_flags(hw) & CLK_SET_RATE_PARENT) {
-			if (!hw_parent)
-				return -EINVAL;
-
-			*prate = clk_hw_round_rate(hw_parent, rate * bestdiv);
-		}
-
-		return DIV_ROUND_UP_ULL((u64)*prate, bestdiv);
+		return divider_ro_round_rate(hw, rate, prate, divider->table,
+					     divider->width, divider->flags,
+					     val);
 	}
 
 	return divider_round_rate(hw, rate, prate, divider->table,
