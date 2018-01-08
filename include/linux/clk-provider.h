@@ -397,6 +397,7 @@ struct clk_divider {
 	spinlock_t	*lock;
 };
 
+#define div_mask(width)	((1 << (width)) - 1)
 #define to_clk_divider(_hw) container_of(_hw, struct clk_divider, hw)
 
 #define CLK_DIVIDER_ONE_BASED		BIT(0)

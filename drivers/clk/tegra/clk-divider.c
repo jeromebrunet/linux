@@ -23,9 +23,8 @@
 #include "clk.h"
 
 #define pll_out_override(p) (BIT((p->shift - 6)))
-#define div_mask(d) ((1 << (d->width)) - 1)
 #define get_mul(d) (1 << d->frac_width)
-#define get_max_div(d) div_mask(d)
+#define get_max_div(d) div_mask(d->width)
 
 #define PERIPH_CLK_UART_DIV_ENB BIT(24)
 
@@ -72,7 +71,7 @@ static unsigned long clk_frac_div_recalc_rate(struct clk_hw *hw,
 	u64 rate = parent_rate;
 
 	reg = readl_relaxed(divider->reg) >> divider->shift;
-	div = reg & div_mask(divider);
+	div = reg & div_mask(divider->width);
 
 	mul = get_mul(divider);
 	div += mul;
@@ -119,7 +118,7 @@ static int clk_frac_div_set_rate(struct clk_hw *hw, unsigned long rate,
 		spin_lock_irqsave(divider->lock, flags);
 
 	val = readl_relaxed(divider->reg);
-	val &= ~(div_mask(divider) << divider->shift);
+	val &= ~(div_mask(divider->width) << divider->shift);
 	val |= div << divider->shift;
 
 	if (divider->flags & TEGRA_DIVIDER_UART) {
