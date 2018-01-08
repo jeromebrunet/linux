@@ -65,8 +65,6 @@
 #include "clk-regmap.h"
 #include "gxbb-aoclk.h"
 
-static DEFINE_SPINLOCK(gxbb_aoclk_lock);
-
 struct gxbb_aoclk_reset_controller {
 	struct reset_controller_dev reset;
 	unsigned int *data;
@@ -110,7 +108,6 @@ GXBB_AO_GATE(uart2, 5);
 GXBB_AO_GATE(ir_blaster, 6);
 
 static struct aoclk_cec_32k cec_32k_ao = {
-	.lock = &gxbb_aoclk_lock,
 	.hw.init = &(struct clk_init_data) {
 		.name = "cec_32k_ao",
 		.ops = &meson_aoclk_cec_32k_ops,
