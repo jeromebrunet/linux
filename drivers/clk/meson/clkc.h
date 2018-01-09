@@ -44,7 +44,7 @@ static inline unsigned int meson_parm_read(struct regmap *map, struct parm *p)
 	regmap_read(map, p->reg_off, &val);
 	return PARM_GET(p->width, p->shift, val);
 }
-static inline void meson_parm_update(struct regmap *map, struct parm *p,
+static inline void meson_parm_write(struct regmap *map, struct parm *p,
 				     unsigned int val)
 {
 	regmap_update_bits(map, p->reg_off, SETPMASK(p->width, p->shift),
@@ -128,9 +128,7 @@ struct meson_clk_cpu {
 int meson_clk_cpu_notifier_cb(struct notifier_block *nb, unsigned long event,
 		void *data);
 
-struct meson_clk_mpll {
-	struct clk_hw hw;
-	void __iomem *base;
+struct meson_clk_mpll_data {
 	struct parm sdm;
 	struct parm sdm_en;
 	struct parm n2;
