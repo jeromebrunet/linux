@@ -55,6 +55,10 @@
 	};
 };
 
+&clkc_audio {
+	status = "okay";
+};
+
 &ethmac {
 	status = "okay";
 	phy-mode = "rgmii";
