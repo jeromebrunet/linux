@@ -92,6 +92,33 @@
 		method = "smc";
 	};
 
+	tdmif_a: tdmif-a {
+		compatible = "amlogic,meson-axg-tdmif";
+		#sound-dai-cells = <1>;
+		clocks = <&clkc_audio AUD_CLKID_MST_A_MCLK>,
+			 <&clkc_audio AUD_CLKID_MST_A_SCLK>,
+			 <&clkc_audio AUD_CLKID_MST_A_LRCLK>;
+		clock-names = "mclk", "sclk", "lrclk";
+	};
+
+	tdmif_b: tdmif-b {
+		compatible = "amlogic,meson-axg-tdmif";
+		#sound-dai-cells = <1>;
+		clocks = <&clkc_audio AUD_CLKID_MST_B_MCLK>,
+			 <&clkc_audio AUD_CLKID_MST_B_SCLK>,
+			 <&clkc_audio AUD_CLKID_MST_B_LRCLK>;
+		clock-names = "mclk", "sclk", "lrclk";
+	};
+
+	tdmif_c: tdmif-c {
+		compatible = "amlogic,meson-axg-tdmif";
+		#sound-dai-cells = <1>;
+		clocks = <&clkc_audio AUD_CLKID_MST_C_MCLK>,
+			 <&clkc_audio AUD_CLKID_MST_C_SCLK>,
+			 <&clkc_audio AUD_CLKID_MST_C_LRCLK>;
+		clock-names = "mclk", "sclk", "lrclk";
+	};
+
 	timer {
 		compatible = "arm,armv8-timer";
 		interrupts = <GIC_PPI 13
