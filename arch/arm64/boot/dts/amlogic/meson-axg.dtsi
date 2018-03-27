@@ -241,6 +241,90 @@
 				#reset-cells = <1>;
 				clocks = <&clkc_audio AUD_CLKID_DDR_ARB>;
 			};
+
+			tdmin_a: audio-controller@300 {
+				compatible = "amlogic,meson-axg-tdmin";
+				reg = <0x0 0x300 0x0 0x40>;
+				clocks = <&clkc_audio AUD_CLKID_TDMIN_A>,
+					 <&clkc_audio AUD_CLKID_TDMIN_A_SCLK>,
+					 <&clkc_audio AUD_CLKID_TDMIN_A_SCLK_SEL>,
+					 <&clkc_audio AUD_CLKID_TDMIN_A_LRCLK>,
+					 <&clkc_audio AUD_CLKID_TDMIN_A_LRCLK>;
+				clock-names = "pclk", "sclk", "sclk_sel",
+					      "lrclk", "lrclk_sel";
+			};
+
+			tdmin_b: audio-controller@340 {
+				compatible = "amlogic,meson-axg-tdmin";
+				reg = <0x0 0x340 0x0 0x40>;
+				clocks = <&clkc_audio AUD_CLKID_TDMIN_B>,
+					 <&clkc_audio AUD_CLKID_TDMIN_B_SCLK>,
+					 <&clkc_audio AUD_CLKID_TDMIN_B_SCLK_SEL>,
+					 <&clkc_audio AUD_CLKID_TDMIN_B_LRCLK>,
+					 <&clkc_audio AUD_CLKID_TDMIN_B_LRCLK>;
+				clock-names = "pclk", "sclk", "sclk_sel",
+					      "lrclk", "lrclk_sel";
+			};
+
+			tdmin_c: audio-controller@380 {
+				compatible = "amlogic,meson-axg-tdmin";
+				reg = <0x0 0x380 0x0 0x40>;
+				clocks = <&clkc_audio AUD_CLKID_TDMIN_C>,
+					 <&clkc_audio AUD_CLKID_TDMIN_C_SCLK>,
+					 <&clkc_audio AUD_CLKID_TDMIN_C_SCLK_SEL>,
+					 <&clkc_audio AUD_CLKID_TDMIN_C_LRCLK>,
+					 <&clkc_audio AUD_CLKID_TDMIN_C_LRCLK>;
+				clock-names = "pclk", "sclk", "sclk_sel",
+					      "lrclk", "lrclk_sel";
+			};
+
+			tdmin_lb: audio-controller@3c0 {
+				compatible = "amlogic,meson-axg-tdmin";
+				reg = <0x0 0x3c0 0x0 0x40>;
+				clocks = <&clkc_audio AUD_CLKID_TDMIN_LB>,
+					 <&clkc_audio AUD_CLKID_TDMIN_LB_SCLK>,
+					 <&clkc_audio AUD_CLKID_TDMIN_LB_SCLK_SEL>,
+					 <&clkc_audio AUD_CLKID_TDMIN_LB_LRCLK>,
+					 <&clkc_audio AUD_CLKID_TDMIN_LB_LRCLK>;
+				clock-names = "pclk", "sclk", "sclk_sel",
+					      "lrclk", "lrclk_sel";
+			};
+
+			tdmout_a: audio-controller@500 {
+				compatible = "amlogic,meson-axg-tdmout";
+				reg = <0x0 0x500 0x0 0x40>;
+				clocks = <&clkc_audio AUD_CLKID_TDMOUT_A>,
+					 <&clkc_audio AUD_CLKID_TDMOUT_A_SCLK>,
+					 <&clkc_audio AUD_CLKID_TDMOUT_A_SCLK_SEL>,
+					 <&clkc_audio AUD_CLKID_TDMOUT_A_LRCLK>,
+					 <&clkc_audio AUD_CLKID_TDMOUT_A_LRCLK>;
+				clock-names = "pclk", "sclk", "sclk_sel",
+					      "lrclk", "lrclk_sel";
+			};
+
+			tdmout_b: audio-controller@540 {
+				compatible = "amlogic,meson-axg-tdmout";
+				reg = <0x0 0x540 0x0 0x40>;
+				clocks = <&clkc_audio AUD_CLKID_TDMOUT_B>,
+					 <&clkc_audio AUD_CLKID_TDMOUT_B_SCLK>,
+					 <&clkc_audio AUD_CLKID_TDMOUT_B_SCLK_SEL>,
+					 <&clkc_audio AUD_CLKID_TDMOUT_B_LRCLK>,
+					 <&clkc_audio AUD_CLKID_TDMOUT_B_LRCLK>;
+				clock-names = "pclk", "sclk", "sclk_sel",
+					      "lrclk", "lrclk_sel";
+			};
+
+			tdmout_c: audio-controller@580 {
+				compatible = "amlogic,meson-axg-tdmout";
+				reg = <0x0 0x580 0x0 0x40>;
+				clocks = <&clkc_audio AUD_CLKID_TDMOUT_C>,
+					 <&clkc_audio AUD_CLKID_TDMOUT_C_SCLK>,
+					 <&clkc_audio AUD_CLKID_TDMOUT_C_SCLK_SEL>,
+					 <&clkc_audio AUD_CLKID_TDMOUT_C_LRCLK>,
+					 <&clkc_audio AUD_CLKID_TDMOUT_C_LRCLK>;
+				clock-names = "pclk", "sclk", "sclk_sel",
+					      "lrclk", "lrclk_sel";
+			};
 		};
 
 		cbus: bus@ffd00000 {
