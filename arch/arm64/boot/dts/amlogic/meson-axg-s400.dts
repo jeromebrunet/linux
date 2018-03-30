@@ -55,6 +55,10 @@
 	};
 };
 
+&sound_card {
+	status = "okay";
+};
+
 &clkc_audio {
 	status = "okay";
 
@@ -164,10 +168,17 @@
 
 &tdmif_b {
 	status = "okay";
+	pinctrl-0 = <&tdmb_sclk_pins>, <&tdmb_fs_pins>,
+		    <&tdmb_din3_pins>, <&mclk_b_pins>;
+	pinctrl-names = "default";
 };
 
 &tdmif_c {
 	status = "okay";
+	pinctrl-0 = <&tdmc_sclk_pins>, <&tdmc_fs_pins>,
+		    <&tdmc_din1_pins>, <&tdmc_dout2_pins>,
+		    <&tdmc_dout3_pins>, <&mclk_c_pins>, <&tdmc_dout0_pins>;
+	pinctrl-names = "default";
 };
 
 &toddr_a {
