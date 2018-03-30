@@ -92,6 +92,10 @@
 		method = "smc";
 	};
 
+	sound_card: sound-card {
+		compatible = "amlogic,meson-axg-audio-card";
+	};
+
 	tdmif_a: tdmif-a {
 		compatible = "amlogic,meson-axg-tdmif";
 		#sound-dai-cells = <1>;
