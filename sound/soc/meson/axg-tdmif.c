@@ -418,7 +418,7 @@ static int axg_tdmif_component_probe(struct snd_soc_component *component)
 	tdmif->rx_mask = 0x3;
 
 	/* When we have something better in place, we could remove this */
-	tdmif->slot_width = 32;
+	tdmif->slot_width = 24;
 
 	return 0;
 }
