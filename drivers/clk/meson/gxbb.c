@@ -970,13 +970,13 @@ static struct clk_regmap gxbb_cts_amclk_sel = {
 		.mask = 0x3,
 		.shift = 9,
 		.table = (u32[]){ 1, 2, 3 },
+		.flags = CLK_MUX_ROUND_CLOSEST,
 	},
 	.hw.init = &(struct clk_init_data){
 		.name = "cts_amclk_sel",
 		.ops = &clk_regmap_mux_ops,
 		.parent_names = (const char *[]){ "mpll0", "mpll1", "mpll2" },
 		.num_parents = 3,
-		.flags = CLK_SET_RATE_PARENT,
 	},
 };
 
@@ -1018,13 +1018,13 @@ static struct clk_regmap gxbb_cts_mclk_i958_sel = {
 		.mask = 0x3,
 		.shift = 25,
 		.table = (u32[]){ 1, 2, 3 },
+		.flags = CLK_MUX_ROUND_CLOSEST,
 	},
 	.hw.init = &(struct clk_init_data) {
 		.name = "cts_mclk_i958_sel",
 		.ops = &clk_regmap_mux_ops,
 		.parent_names = (const char *[]){ "mpll0", "mpll1", "mpll2" },
 		.num_parents = 3,
-		.flags = CLK_SET_RATE_PARENT,
 	},
 };
 
