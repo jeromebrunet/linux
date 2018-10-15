@@ -13,6 +13,12 @@
 #include <dt-bindings/reset/amlogic,meson-axg-audio-arb.h>
 #include <dt-bindings/reset/amlogic,meson-axg-reset.h>
 
+/* 16 MiB reserved for Hardware ROM Firmware */
+/memreserve/ 0x0 0x1000000;
+
+/* 3 MiB reserved for ARM Trusted Firmware (BL31) */
+/memreserve/ 0x05000000 0x300000;
+
 / {
 	compatible = "amlogic,meson-axg";
 
@@ -113,24 +119,6 @@
 	psci {
 		compatible = "arm,psci-1.0";
 		method = "smc";
-	};
-
-	reserved-memory {
-		#address-cells = <2>;
-		#size-cells = <2>;
-		ranges;
-
-		/* 16 MiB reserved for Hardware ROM Firmware */
-		hwrom_reserved: hwrom@0 {
-			reg = <0x0 0x0 0x0 0x1000000>;
-			no-map;
-		};
-
-		/* Alternate 3 MiB reserved for ARM Trusted Firmware (BL31) */
-		secmon_reserved: secmon@5000000 {
-			reg = <0x0 0x05000000 0x0 0x300000>;
-			no-map;
-		};
 	};
 
 	soc {
