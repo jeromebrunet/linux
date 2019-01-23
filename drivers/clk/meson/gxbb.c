@@ -15,6 +15,7 @@
 #include "clkc.h"
 #include "gxbb.h"
 #include "clk-regmap.h"
+#include "clk-pll.h"
 
 #define IN_PREFIX "ee-in-"
 

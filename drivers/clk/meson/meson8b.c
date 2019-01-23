@@ -19,6 +19,7 @@
 #include "clkc.h"
 #include "meson8b.h"
 #include "clk-regmap.h"
+#include "clk-pll.h"
 
 static DEFINE_SPINLOCK(meson_clk_lock);
 
