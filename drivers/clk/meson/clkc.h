@@ -11,11 +11,6 @@
 #include "clk-regmap.h"
 #include "parm.h"
 
-struct meson_vid_pll_div_data {
-	struct parm val;
-	struct parm sel;
-};
-
 struct meson_clk_dualdiv_param {
 	unsigned int n1;
 	unsigned int n2;
@@ -35,7 +30,6 @@ struct meson_clk_dualdiv_data {
 
 /* clk_ops */
 extern const struct clk_ops meson_clk_cpu_ops;
-extern const struct clk_ops meson_vid_pll_div_ro_ops;
 extern const struct clk_ops meson_clk_dualdiv_ops;
 extern const struct clk_ops meson_clk_dualdiv_ro_ops;
 
