@@ -20,6 +20,7 @@
 #include "clkc.h"
 #include "clk-regmap.h"
 #include "clk-pll.h"
+#include "clk-mpll.h"
 #include "axg.h"
 
 #define IN_PREFIX "ee-in-"
