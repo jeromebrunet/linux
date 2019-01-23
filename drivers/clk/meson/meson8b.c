@@ -16,7 +16,6 @@
 #include <linux/slab.h>
 #include <linux/regmap.h>
 
-#include "clkc.h"
 #include "meson8b.h"
 #include "clk-regmap.h"
 #include "clk-pll.h"

@@ -17,6 +17,7 @@
  */
 
 #include "clkc-audio.h"
+#include "clk-regmap.h"
 
 static inline struct meson_sclk_div_data *
 meson_sclk_div_data(struct clk_regmap *clk)

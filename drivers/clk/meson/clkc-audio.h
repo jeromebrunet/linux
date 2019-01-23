@@ -7,7 +7,8 @@
 #ifndef __MESON_CLKC_AUDIO_H
 #define __MESON_CLKC_AUDIO_H
 
-#include "clkc.h"
+#include <linux/clk-provider.h>
+#include "parm.h"
 
 struct meson_sclk_div_data {
 	struct parm div;
