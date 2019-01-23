@@ -18,6 +18,7 @@
 #include <linux/regmap.h>
 
 #include "clkc.h"
+#include "clk-regmap.h"
 #include "axg.h"
 
 #define IN_PREFIX "ee-in-"
