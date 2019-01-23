@@ -16,6 +16,7 @@
 
 #include "clkc-audio.h"
 #include "axg-audio.h"
+#include "clk-input.h"
 #include "clk-regmap.h"
 #include "clk-phase.h"
 
