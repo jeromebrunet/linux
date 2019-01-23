@@ -9,12 +9,6 @@
 
 #include "clkc.h"
 
-struct meson_clk_triphase_data {
-	struct parm ph0;
-	struct parm ph1;
-	struct parm ph2;
-};
-
 struct meson_sclk_div_data {
 	struct parm div;
 	struct parm hi;
@@ -22,7 +16,6 @@ struct meson_sclk_div_data {
 	struct clk_duty cached_duty;
 };
 
-extern const struct clk_ops meson_clk_triphase_ops;
 extern const struct clk_ops meson_sclk_div_ops;
 
 #endif /* __MESON_CLKC_AUDIO_H */

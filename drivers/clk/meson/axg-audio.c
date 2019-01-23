@@ -16,6 +16,8 @@
 
 #include "clkc-audio.h"
 #include "axg-audio.h"
+#include "clk-regmap.h"
+#include "clk-phase.h"
 
 #define AXG_MST_IN_COUNT	8
 #define AXG_SLV_SCLK_COUNT	10

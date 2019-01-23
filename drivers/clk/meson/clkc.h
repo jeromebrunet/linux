@@ -11,13 +11,6 @@
 #include "clk-regmap.h"
 #include "parm.h"
 
-struct meson_clk_phase_data {
-	struct parm ph;
-};
-
-int meson_clk_degrees_from_val(unsigned int val, unsigned int width);
-unsigned int meson_clk_degrees_to_val(int degrees, unsigned int width);
-
 struct meson_vid_pll_div_data {
 	struct parm val;
 	struct parm sel;
@@ -42,7 +35,6 @@ struct meson_clk_dualdiv_data {
 
 /* clk_ops */
 extern const struct clk_ops meson_clk_cpu_ops;
-extern const struct clk_ops meson_clk_phase_ops;
 extern const struct clk_ops meson_vid_pll_div_ro_ops;
 extern const struct clk_ops meson_clk_dualdiv_ops;
 extern const struct clk_ops meson_clk_dualdiv_ro_ops;
